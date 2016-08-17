@@ -1,0 +1,21 @@
+//- Expects a posts variables to be passed with the following structure
+//- posts: [
+//-     {
+//-         attributes: {
+//-             title: String,
+//-             date: String,
+//-         },
+//-         html: String,
+//-     }
+//-     ...
+//- ]
+
+html
+    head
+    body
+        div.posts
+            each post in posts
+                div.post
+                    h1.title= post.attributes.title
+                    h4.date= post.attributes.date
+                    div.body!= post.html

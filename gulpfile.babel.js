@@ -49,6 +49,11 @@ export const config = {
             'package.json',
             '/'
         ),
+
+        paths(
+            'src/*.pug',
+            '/'
+        ),
     ],
 
     optsBabel: {

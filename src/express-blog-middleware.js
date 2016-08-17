@@ -152,8 +152,8 @@ function blog (opts= {}) {
     // Options & defaults
     const options = {
         postsDirectory: opts.postsDirectory,
-        post: opts.post || 'post.pug',
-        page: opts.page || 'page.pug',
+        post: opts.post || path.join(__dirname, 'post.pug'),
+        page: opts.page || path.join(__dirname, 'page.pug'),
         postsPerPage: opts.postsPerPage || 10,
     };
 
@@ -201,7 +201,9 @@ function blog (opts= {}) {
 
         console.log(posts);
 
-        return res.status(200).send('OKKDAY');
+        // console.log(pug.renderFile(options.page, { posts }));
+
+        return res.status(200).send(pug.renderFile(options.page, { posts }));
     });
 
     return router;
