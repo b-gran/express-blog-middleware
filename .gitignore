@@ -1,0 +1,7 @@
+# IDE
+.idea/
+
+# Build
+dist/
+posts/
+node_modules/
