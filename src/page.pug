@@ -1,14 +1,28 @@
 //- Expects a posts variables to be passed with the following structure
 //- posts: [
 //-     {
+//-         // front-matter for the post
 //-         attributes: {
 //-             title: String,
 //-             date: String,
 //-         },
+//-
+//-         // HTML content of the post
 //-         html: String,
+//-
+//-         // For direct links to the post
+//-         id: String,
 //-     }
 //-     ...
 //- ]
+//-
+//- Expects a blogURL variable which is used for direct links to posts
+
+//- Generate the URL for a direct link to a post based on the
+//- blogURL global variable
+-   var directLink = function (id) {
+-       return blogURL + 'post/' + id;
+-   }
 
 html
     head
@@ -16,6 +30,8 @@ html
         div.posts
             each post in posts
                 div.post
-                    h1.title= post.attributes.title
+                    h1.title
+                        a(href=directLink(post.id))= post.attributes.title
+
                     h4.date= post.attributes.date
                     div.body!= post.html

@@ -50,10 +50,17 @@ function extractFM (path) {
  * @param {any} [thisArg] - what to use for this when calling the parser
  */
 function createParser (parser, thisArg = null) {
-    return (path, ...args) => {
-        const content = extractFM(path);
+    return (postPath, ...args) => {
+        const content = extractFM(postPath);
         return {
+            // FM content
             ...content,
+
+            // The post's id (for direct links etc.)
+            // Just the filename without extension
+            id: path.basename(postPath, path.extname(postPath)),
+
+            // Parsed HTML of the post
             html: parser.apply(thisArg, [ content.body, ...args ]),
         }
     };
@@ -75,19 +82,6 @@ export const PARSERS = {
 }
 
 /**
- * Tries to retrieve the content for the post with filename `postPath`.
- *
- * @param {string} postPath - the post's filename
- */
-function fetchPost (postPath) {
-    // Raw post data
-    const raw = fs.readFileSync(postPath);
-
-    // Extract title, etc.
-    const content = fm(raw);
-}
-
-/**
  * Searches postDirectory for any file with a postName as its base name.
  *
  * If a file has postName and any of the legal file formats, this post will
@@ -101,12 +95,11 @@ function getPostMeta (postDirectory, postName) {
         // Test all legal file formats
         .map(type => path.format({
             dir: postDirectory,
-            file: postName,
-            ext: `.${type}`,
-        })
+            base: `${postName}.${type}`
+        }))
 
         // Find which (if any) exist
-        .filter(postPath => fs.existsSync(postPath)))
+        .filter(postPath => fs.existsSync(postPath))
 
         // Return the first existing file, or false if none exist
         .reduce(
@@ -116,7 +109,7 @@ function getPostMeta (postDirectory, postName) {
                     {
                         name: postName,
                         directory: postDirectory,
-                        extension: path.extname(postPath),
+                        extension: ext(postPath),
                         path: postPath,
                     }
                 );
@@ -142,6 +135,12 @@ function getPostMeta (postDirectory, postName) {
  *      // Number of posts to display per page
  *      // Default: 10
  *      [postsPerPage]: Number,
+ *
+ *      // Optional
+ *      // URL to the root of the blog
+ *      // Used for direct links to posts
+ *      // Default: /
+ *      [blogURL]: String,
  * }
  */
 function blog (opts= {}) {
@@ -155,6 +154,7 @@ function blog (opts= {}) {
         post: opts.post || path.join(__dirname, 'post.pug'),
         page: opts.page || path.join(__dirname, 'page.pug'),
         postsPerPage: opts.postsPerPage || 10,
+        blogURL: opts.blogURL || '/',
     };
 
     // Create a router
@@ -199,11 +199,47 @@ function blog (opts= {}) {
                 }),
         );
 
-        console.log(posts);
+        return res
+            .status(200)
+            .send(
+                // Provide the template with the list of posts for
+                // this page and the current page number.
+                pug.renderFile(
+                    options.page,
+                    {
+                        posts,
+                        page,
+                        blogURL: options.blogURL,
+                    }
+                )
+            );
+    });
 
-        // console.log(pug.renderFile(options.page, { posts }));
+    // View a particular post
+    router.get('/post/:postName', (req, res, next) => {
+        const meta = getPostMeta(options.postsDirectory, req.params.postName);
 
-        return res.status(200).send(pug.renderFile(options.page, { posts }));
+        // Post doesn't exist
+        if (!meta) {
+            const err = new Error(`The post ${req.params.postName} does not exist.`);
+            err.status = err.statusCode = 404;
+            return next(err);
+        }
+
+        return res
+            .status(200)
+            .send(
+                pug.renderFile(
+                    options.page,
+                    {
+                        posts: [
+                            PARSERS[meta.extension](meta.path)
+                        ],
+                        page: 1,
+                        blogURL: options.blogURL,
+                    }
+                )
+            )
     });
 
     return router;
