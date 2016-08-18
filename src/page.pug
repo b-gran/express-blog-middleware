@@ -17,6 +17,10 @@
 //- ]
 //-
 //- Expects a blogURL variable which is used for direct links to posts
+//-
+//- Expects a page variable that indicates the current page
+//-
+//- Expects a totalPages variable that indicates the total number of pages
 
 //- Generate the URL for a direct link to a post based on the
 //- blogURL global variable
@@ -24,8 +28,45 @@
 -       return blogURL + 'post/' + id;
 -   }
 
+//- Returns an array of numbers in the range [low, high]
+-   var range = function (low, high) {
+-       return Array.apply(null, {length: high - low + 1}).map(Number.call, Number).map(function (n) { return n + low; });
+-   }
+
+mixin pagination (currentPage, total)
+    //- Total # of pages to show
+    - var pagesToShow = 5;
+
+    //- Pages visible on each side of active page
+    - var pagesPerSide = Math.floor(pagesToShow / 2);
+
+    //- Lowest possible page
+    - var minPage = Math.max(currentPage - pagesPerSide, 0);
+
+    //- Show at least `pagesPerSide` pages on left, under the condition
+    //- that `pagesToShow` pages must be visible
+    - var low = Math.min(minPage, Math.max(0, total - pagesToShow));
+
+    //- Show at least `pagesPerSide` pages on right, under the condition
+    //- that `pagesToShow` pages must be visible
+    - var high = Math.min(minPage + pagesToShow, total - 1);
+
+    ul.pagination
+        each page in range(low, high)
+            - var liClass = page === currentPage ? 'active' : '';
+            - var url = blogURL + '?page=' + (page + 1);
+            li(class=liClass)
+                a(href=url)= page + 1
+
 html
     head
+        link(
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+        rel="stylesheet",
+        integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u",
+        crossorigin="anonymous"
+        )
+
     body
         div.posts
             each post in posts
@@ -35,3 +76,6 @@ html
 
                     h4.date= post.attributes.date
                     div.body!= post.html
+
+        if totalPages
+            +pagination(page, totalPages)

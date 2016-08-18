@@ -142,6 +142,8 @@ function getPostMeta (postDirectory, postName) {
  *      // Default: /
  *      [blogURL]: String,
  * }
+ *
+ * Returns an Express router that serves a blog.
  */
 function blog (opts= {}) {
     if (!opts.postsDirectory) {
@@ -160,14 +162,26 @@ function blog (opts= {}) {
     // Create a router
     const router = express.Router();
 
-    // Main blog view
-    // The page (1-indexed) can be specified in the query string
-    //
-    //      e.g. //server:3000/?page=1
+    /**
+     * GET /?page=N
+     *
+     * Main blog view
+     * The page (1-indexed) can be specified in the query string
+     *      e.g. //server:3000/?page=1
+     */
     router.get('/', (req, res, next) => {
         // The page of posts to display
         const page = Math.max(1, req.query.page || 1) - 1;
         const firstIndex = page * options.postsPerPage;
+
+        // Get all files in posts directory with a valid extensions
+        const allPosts = fs.readdirSync(options.postsDirectory)
+            .filter(filename => _.includes(FILE_FORMATS, ext(filename)))
+
+            // Parse all files
+            .map(filename => {
+                return PARSERS[ext(filename)](path.join(options.postsDirectory, filename));
+            });
 
         // Posts for this page
         const posts = _.flow(
@@ -188,16 +202,7 @@ function blog (opts= {}) {
                 Math.min(posts.length, firstIndex),
                 Math.min(posts.length, firstIndex + options.postsPerPage)
             )
-        )(
-            fs.readdirSync(options.postsDirectory)
-            // Get all files in posts directory with a valid extensions
-                .filter(filename => _.includes(FILE_FORMATS, ext(filename)))
-
-                // Parse all files
-                .map(filename => {
-                    return PARSERS[ext(filename)](path.join(options.postsDirectory, filename));
-                }),
-        );
+        )(allPosts);
 
         return res
             .status(200)
@@ -209,13 +214,18 @@ function blog (opts= {}) {
                     {
                         posts,
                         page,
+                        totalPages: Math.ceil(allPosts.length / options.postsPerPage),
                         blogURL: options.blogURL,
                     }
                 )
             );
     });
 
-    // View a particular post
+    /**
+     * GET /post/:postName
+     *
+     * View a particular post
+     */
     router.get('/post/:postName', (req, res, next) => {
         const meta = getPostMeta(options.postsDirectory, req.params.postName);
 
