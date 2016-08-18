@@ -52,11 +52,27 @@ mixin pagination (currentPage, total)
     - var high = Math.min(minPage + pagesToShow, total - 1);
 
     ul.pagination
+        //- All the way to the left
+        li
+            a(href=blogURL + '?page=' + 1) «
+
+        //- One page to left
+        li
+            a(href=blogURL + '?page=' + (Math.max(0, currentPage - 1) + 1)) ‹
+
         each page in range(low, high)
             - var liClass = page === currentPage ? 'active' : '';
             - var url = blogURL + '?page=' + (page + 1);
             li(class=liClass)
                 a(href=url)= page + 1
+
+        //- One page to right
+        li
+            a(href=blogURL + '?page=' + (Math.min(high, currentPage + 1) + 1)) ›
+
+        //- All the way to the left
+        li
+            a(href=blogURL + '?page=' + (high + 1)) »
 
 html
     head
