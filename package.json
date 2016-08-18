@@ -2,7 +2,7 @@
   "name": "express-blog-middleware",
   "version": "0.1.0",
   "description": "Blog middleware for the Express framework",
-  "main": "index.js",
+  "main": "express-blog-middleware.js",
   "scripts": {},
   "repository": {
     "type": "git",

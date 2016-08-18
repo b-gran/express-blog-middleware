@@ -51,6 +51,11 @@ export const config = {
         ),
 
         paths(
+            'README.md',
+            '/'
+        ),
+
+        paths(
             'src/*.pug',
             '/'
         ),
