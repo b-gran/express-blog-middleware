@@ -1,6 +1,6 @@
 {
   "name": "express-blog-middleware",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Blog middleware for the Express framework",
   "main": "express-blog-middleware.js",
   "scripts": {},
