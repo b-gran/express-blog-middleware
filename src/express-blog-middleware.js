@@ -150,8 +150,8 @@ function blog (opts= {}) {
         throw new Error('You must supply `postsDirectory` in the options.');
     }
 
-    // Options & defaults
-    const options = {
+    // Config & defaults
+    const config = {
         postsDirectory: opts.postsDirectory,
         post: opts.post || path.join(__dirname, 'post.pug'),
         page: opts.page || path.join(__dirname, 'page.pug'),
@@ -172,15 +172,15 @@ function blog (opts= {}) {
     router.get('/', (req, res, next) => {
         // The page of posts to display
         const page = Math.max(1, req.query.page || 1) - 1;
-        const firstIndex = page * options.postsPerPage;
+        const firstIndex = page * config.postsPerPage;
 
         // Get all files in posts directory with a valid extensions
-        const allPosts = fs.readdirSync(options.postsDirectory)
+        const allPosts = fs.readdirSync(config.postsDirectory)
             .filter(filename => _.includes(FILE_FORMATS, ext(filename)))
 
-            // Parse all files
+            // Parse all files based on file extension
             .map(filename => {
-                return PARSERS[ext(filename)](path.join(options.postsDirectory, filename));
+                return PARSERS[ext(filename)](path.join(config.postsDirectory, filename));
             });
 
         // Posts for this page
@@ -200,7 +200,7 @@ function blog (opts= {}) {
             posts => _.slice(
                 posts,
                 Math.min(posts.length, firstIndex),
-                Math.min(posts.length, firstIndex + options.postsPerPage)
+                Math.min(posts.length, firstIndex + config.postsPerPage)
             )
         )(allPosts);
 
@@ -210,12 +210,12 @@ function blog (opts= {}) {
                 // Provide the template with the list of posts for
                 // this page and the current page number.
                 pug.renderFile(
-                    options.page,
+                    config.page,
                     {
                         posts,
                         page,
-                        totalPages: Math.ceil(allPosts.length / options.postsPerPage),
-                        blogURL: options.blogURL,
+                        totalPages: Math.ceil(allPosts.length / config.postsPerPage),
+                        blogURL: config.blogURL,
                     }
                 )
             );
@@ -225,9 +225,14 @@ function blog (opts= {}) {
      * GET /post/:postName
      *
      * View a particular post
+     *
+     * The post's id (postName) is just its filename without the extension.
+     *
+     * If a post with the specified postName isn't found, this route will
+     * just forward a 404 error to the next error handling middleware.
      */
     router.get('/post/:postName', (req, res, next) => {
-        const meta = getPostMeta(options.postsDirectory, req.params.postName);
+        const meta = getPostMeta(config.postsDirectory, req.params.postName);
 
         // Post doesn't exist
         if (!meta) {
@@ -240,13 +245,10 @@ function blog (opts= {}) {
             .status(200)
             .send(
                 pug.renderFile(
-                    options.page,
+                    config.post,
                     {
-                        posts: [
-                            PARSERS[meta.extension](meta.path)
-                        ],
-                        page: 1,
-                        blogURL: options.blogURL,
+                        post: PARSERS[meta.extension](meta.path),
+                        blogURL: config.blogURL,
                     }
                 )
             )
